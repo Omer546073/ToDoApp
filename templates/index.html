@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyTodo — Card Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --drawer:#22282B; --drawer-dark:#1A1F22; --card:#F2ECDD; --card-edge:#E4DCC6;
+    --ink:#2B2A28; --ink-soft:#65605A; --thread:#B5402F; --thread-dark:#8C2F22;
+    --brass:#B79257; --focus:#3A6E63;
+    --high:#B5402F; --medium:#B79257; --low:#3A6E63;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; background:var(--drawer);
+    background-image:radial-gradient(ellipse at top, rgba(255,255,255,0.04), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 64px);
+    color:var(--ink); font-family:'IBM Plex Sans', sans-serif; min-height:100vh;
+  }
+  .binder-rail{
+    position:fixed; left:0; top:0; bottom:0; width:34px; background:var(--drawer-dark);
+    border-right:1px solid rgba(0,0,0,0.4); display:flex; flex-direction:column;
+    align-items:center; padding:28px 0; gap:26px; z-index:5;
+  }
+  .binder-rail .hole{
+    width:12px;height:12px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #3a4247, #0c0f10 70%);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05);
+  }
+  @media (max-width:640px){ .binder-rail{display:none;} body{padding-left:0 !important;} }
+  body{padding-left:34px;}
+  .spine{
+    background:linear-gradient(180deg, #2A3134, #20262A); border-bottom:2px solid var(--brass);
+    padding:0 28px; display:flex; align-items:center; gap:28px; height:56px; position:relative;
+  }
+  .spine::after{
+    content:""; position:absolute; left:0; right:0; bottom:-4px; height:4px;
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,0.35) 0 2px, transparent 2px 10px); opacity:0.5;
+  }
+  .brand{
+    font-family:'Courier Prime', monospace; font-weight:700; font-size:18px; color:var(--card);
+    letter-spacing:1px; display:flex; align-items:baseline; gap:6px; text-decoration:none;
+  }
+  .brand .dot{color:var(--thread);}
+  .spine nav{display:flex; gap:22px; flex:1;}
+  .spine nav a{
+    color:#C9C2B3; text-decoration:none; font-size:13px; letter-spacing:0.4px; padding:6px 2px;
+    border-bottom:2px solid transparent; transition:color .15s, border-color .15s;
+  }
+  .spine nav a:hover{color:var(--card); border-color:var(--brass);}
+  .spine nav a[aria-current]{color:var(--card); border-color:var(--thread);}
+  main{ max-width:880px; margin:0 auto; padding:48px 24px 80px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:2.5px;
+    text-transform:uppercase; color:#9AA39E; margin-bottom:10px;
+  }
+  .eyebrow .thread-dash{color:var(--thread);}
+  .index-card{
+    background:var(--card);
+    background-image:repeating-linear-gradient(180deg, transparent 0 31px, rgba(101,96,90,0.12) 31px 32px);
+    position:relative; border-radius:2px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.6) inset;
+    padding:38px 40px 32px; margin-bottom:56px;
+  }
+  .index-card::before{
+    content:""; position:absolute; top:-7px; left:24px; right:24px; height:14px;
+    background-image:radial-gradient(circle, var(--drawer) 4px, transparent 4.5px);
+    background-size:18px 18px; background-position:0 0;
+  }
+  .index-card .ruled-margin{ position:absolute; top:0; bottom:0; left:64px; width:1px; background:rgba(181,64,47,0.35); }
+  .card-head{
+    display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:26px;
+    padding-bottom:16px; border-bottom:1px solid var(--card-edge);
+  }
+  .card-head h1{ font-family:'Courier Prime', monospace; font-size:25px; margin:0 0 4px; letter-spacing:0.5px; }
+  .card-head p{ margin:0; font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .call-number{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; text-align:right; color:var(--ink-soft);
+    line-height:1.6; border:1px solid var(--card-edge); padding:6px 10px; border-radius:2px;
+    background:rgba(255,255,255,0.4);
+  }
+  .call-number strong{display:block; color:var(--ink); font-size:13px;}
+  .field-row{ display:flex; gap:16px; }
+  .field{margin-bottom:20px; position:relative; flex:1;}
+  .field label{ display:block; font-size:12.5px; font-weight:600; letter-spacing:0.3px; margin-bottom:6px; color:var(--ink); }
+  .field input[type="text"], .field select{
+    width:100%; padding:11px 12px; border:1px solid var(--card-edge); border-bottom:2px solid var(--ink-soft);
+    background:rgba(255,255,255,0.55); border-radius:2px; font-size:14.5px; font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s, background .15s;
+  }
+  .field input::placeholder{color:#A39E92;}
+  .field input:focus, .field select:focus{
+    border-bottom-color:var(--focus); box-shadow:0 0 0 3px rgba(58,110,99,0.18); background:#fff;
+  }
+  .submit-row{ display:flex; align-items:center; gap:16px; }
+  .stamp-btn{
+    font-family:'Courier Prime', monospace; font-weight:700; font-size:14px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--card); background:var(--thread); border:2px solid var(--thread-dark);
+    padding:12px 28px; border-radius:2px; cursor:pointer; transform:rotate(-1deg);
+    transition:transform .12s ease, background .12s ease; box-shadow:2px 3px 0 rgba(0,0,0,0.18);
+  }
+  .stamp-btn:hover{ background:var(--thread-dark); transform:rotate(-1deg) translateY(-1px); }
+  .stamp-btn:active{ transform:rotate(0deg) translateY(1px); box-shadow:1px 1px 0 rgba(0,0,0,0.18); }
+  .stamp-btn:focus-visible{ outline:3px solid var(--focus); outline-offset:3px; }
+  .ledger-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .ledger-head h2{ font-family:'Courier Prime', monospace; font-size:22px; color:var(--card); margin:0; letter-spacing:0.5px; }
+  .ledger-head .count{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:#9AA39E; }
+  .filter-tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .filter-tabs a{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-decoration:none; color:#C9C2B3;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:6px 12px; border-radius:14px;
+    transition:background .15s, color .15s;
+  }
+  .filter-tabs a:hover{ background:rgba(255,255,255,0.12); color:#fff; }
+  .filter-tabs a.active{ background:var(--thread); border-color:var(--thread-dark); color:#fff; }
+  .ledger{ background:var(--card); border-radius:2px; box-shadow:0 14px 32px rgba(0,0,0,0.4); overflow:hidden; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--ink-soft); background:var(--card-edge); padding:12px 18px;
+    border-bottom:2px solid var(--thread);
+  }
+  tbody td{ padding:14px 18px; font-size:14px; border-bottom:1px solid var(--card-edge); position:relative; vertical-align:top; }
+  tbody tr{transition:background .12s ease;}
+  tbody tr:hover{background:rgba(181,64,47,0.06);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.is-done .name-first, tbody tr.is-done .desc-cell{ text-decoration:line-through; color:var(--ink-soft); }
+  .row-num{ font-family:'IBM Plex Mono', monospace; color:var(--thread); font-weight:500; }
+  .name-first{font-weight:600;}
+  .desc-cell{color:var(--ink-soft); max-width:240px;}
+  .date-cell{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-soft); white-space:nowrap; }
+  .priority-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:3px 8px; border-radius:10px; color:#fff; white-space:nowrap;
+  }
+  .priority-High{background:var(--high);}
+  .priority-Medium{background:var(--brass);}
+  .priority-Low{background:var(--low);}
+  .actions{ display:flex; gap:8px; white-space:nowrap; flex-wrap:wrap; }
+  .actions a{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-decoration:none; padding:4px 9px;
+    border-radius:2px; border:1px solid transparent;
+  }
+  .actions .done{ color:var(--brass); border-color:rgba(183,146,87,0.4); }
+  .actions .done:hover{background:rgba(183,146,87,0.12);}
+  .actions .edit{ color:var(--focus); border-color:rgba(58,110,99,0.35); }
+  .actions .edit:hover{background:rgba(58,110,99,0.1);}
+  .actions .delete{ color:var(--thread); border-color:rgba(181,64,47,0.35); }
+  .actions .delete:hover{background:rgba(181,64,47,0.1);}
+  .empty-row td{ text-align:center; padding:28px 18px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:13px; }
+  footer{ text-align:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:#6E756F; padding:30px 0 10px; }
+  @media (max-width:560px){
+    .index-card{padding:28px 18px 24px;}
+    .card-head{flex-direction:column; gap:14px;}
+    .field-row{flex-direction:column; gap:0;}
+    .call-number{text-align:left;}
+    thead th:nth-child(1), tbody td:nth-child(1),
+    thead th:nth-child(4), tbody td:nth-child(4){display:none;}
+    .spine{gap:14px; padding:0 14px;}
+    .spine nav{gap:12px; overflow-x:auto;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="binder-rail" aria-hidden="true">
+    <div class="hole"></div><div class="hole"></div><div class="hole"></div>
+    <div class="hole"></div><div class="hole"></div><div class="hole"></div>
+    <div class="hole"></div><div class="hole"></div>
+  </div>
+
+  <header class="spine">
+    <a class="brand" href="/">MyTodo<span class="dot">.</span></a>
+    <nav>
+      <a href="/" aria-current="page">Home</a>
+      <a href="/stats">Stats</a>
+      <a href="/about">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="eyebrow"><span class="thread-dash">—</span> New entry</div>
+
+    <section class="index-card">
+      <div class="ruled-margin" aria-hidden="true"></div>
+      <div class="card-head">
+        <div>
+          <h1>Add a Todo</h1>
+          <p>File a new card into the catalog</p>
+        </div>
+        <div class="call-number">
+          <strong>No. {{ "%03d"|format((allTodo|length) + 1) }}</strong>
+          Box&nbsp;01 / Drawer&nbsp;A
+        </div>
+      </div>
+
+      <form method="POST" action="/">
+        <div class="field">
+          <label for="title">Todo Title</label>
+          <input type="text" id="title" name="title" placeholder="Enter the Todo Title" required>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="desc">Todo Description</label>
+            <input type="text" id="desc" name="desc" placeholder="Add Description" required>
+          </div>
+          <div class="field" style="flex:0 0 160px;">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="stamp-btn">Submit</button>
+        </div>
+      </form>
+    </section>
+
+    <div class="eyebrow"><span class="thread-dash">—</span> Catalog</div>
+
+    <section>
+      <div class="ledger-head">
+        <h2>Your Todos</h2>
+        <span class="count">{{ allTodo|length }} card{{ "s" if allTodo|length != 1 else "" }} shown</span>
+      </div>
+
+      <div class="filter-tabs">
+        <a href="/?filter=all" class="{{ 'active' if status == 'all' }}">All</a>
+        <a href="/?filter=active" class="{{ 'active' if status == 'active' }}">Active</a>
+        <a href="/?filter=completed" class="{{ 'active' if status == 'completed' }}">Completed</a>
+      </div>
+
+      <div class="ledger">
+        <table>
+          <thead>
+            <tr>
+              <th>SNo</th>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Priority</th>
+              <th>Filed on</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for todo in allTodo %}
+            <tr class="{{ 'is-done' if todo.completed }}">
+              <td class="row-num">{{ loop.index }}</td>
+              <td class="name-first">{{ todo.title }}</td>
+              <td class="desc-cell">{{ todo.desc }}</td>
+              <td><span class="priority-tag priority-{{ todo.priority }}">{{ todo.priority }}</span></td>
+              <td class="date-cell">{{ todo.date_created.strftime('%d %b %Y') }}</td>
+              <td class="actions">
+                <a class="done" href="/complete/{{ todo.sno }}">{{ "Undo" if todo.completed else "Done" }}</a>
+                <a class="edit" href="/update/{{ todo.sno }}">Edit</a>
+                <a class="delete" href="/delete/{{ todo.sno }}" onclick="return confirm('Remove this card from the catalog?');">Delete</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr class="empty-row">
+              <td colspan="6">No cards filed yet — add your first todo above.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>Drawer A — filed in entry order</footer>
+  </main>
+
+</body>
+</html>
